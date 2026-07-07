@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Riverbank Door Code Generator</title>
+<!--
+  Riverbank Door Code Generator. Build v1 - 2026-07-07
+  For the Riverbank electronic keypad lock.
+  Generates a random 4-digit door code for a resident, with how-to instructions.
+  Nothing is stored. The email button sends the code to rb@alliancewi.com.
+
+  Change summary v1 (2026-07-07):
+   - New tool, based on the Simplex Door Code Generator v5 chassis (same layout,
+     email-to-manager flow with no-mail-app copy fallback).
+   - Rules rewritten for the electronic lock (see LOCK RULES below).
+   - Single "Generate code" button (no double-press style on this lock).
+   - mailto: To: is pre-addressed to rb@alliancewi.com.
+
+  Deployment: rename a copy to index.html for the GitHub Pages repo serving
+  rbdoorcodes.alliancewi.com (CNAME already created on GoDaddy).
+
+  ============================================================================
+  LOCK RULES (drive the generator - edit here if hardware rules change):
+   - Electronic keypad, digits 0-9 plus a C (clear) button.
+   - Code is exactly 4 digits.
+   - No digit may be used more than once in a code.
+   - No simultaneous presses - one button at a time.
+   - Press C at any time to clear and start over.
+   - Knob turned AWAY from the door jamb = unlock; TOWARD the jamb = lock.
+   - Generator also rejects straight runs (e.g. 1234, 8765) as too guessable;
+     no repeats across generations while feasible.
+  ============================================================================
+-->
+<style>
+  :root{--ink:#1f2933;--muted:#5b6b7b;--line:#d9e0e7;--bg:#f4f6f8;--brand:#1d4e6f;
+    --brand-dk:#163b54;--accent:#eef3f7;--ok:#1d6f3f;--warn:#8a5a00;--deny:#b00020;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;}
+  .wrap{max-width:840px;margin:0 auto;padding:24px 18px 56px;}
+  h1{font-size:1.5rem;margin:0 0 2px;color:var(--brand-dk);}
+  .sub{color:var(--muted);font-size:.9rem;margin:0 0 18px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);margin-bottom:18px;}
+  h2{font-size:1.05rem;color:var(--brand-dk);margin:0 0 12px;}
+  h3{font-size:.95rem;color:var(--brand);margin:0 0 6px;}
+  p{margin:0 0 10px;}
+  label{display:block;font-weight:600;font-size:.88rem;margin:12px 0 5px;}
+  .hint{font-weight:400;color:var(--muted);font-size:.8rem;}
+  input[type=text]{width:100%;padding:9px 11px;font-size:1rem;
+    border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+  input:focus{outline:2px solid var(--brand);border-color:var(--brand);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr;}}
+
+  /* lock diagram */
+  .lockrow{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;}
+  .lockrow .diagram{flex:0 0 auto;}
+  .lockrow .lockwords{flex:1;min-width:240px;}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:var(--accent);
+    border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:.85rem;}
+  .codeface{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;color:var(--brand-dk);}
+
+  /* generator */
+  .gbtns{display:grid;grid-template-columns:1fr;gap:12px;}
+  .gbtn{padding:15px 14px;border:1px solid var(--brand);background:var(--brand);color:#fff;
+    border-radius:10px;cursor:pointer;text-align:left;}
+  .gbtn:hover{background:var(--brand-dk);border-color:var(--brand-dk);}
+  .gbtn .t{display:block;font-size:1rem;font-weight:700;margin-bottom:3px;}
+  .gbtn .d{display:block;font-size:.8rem;opacity:.9;font-weight:400;line-height:1.35;}
+
+  .result{display:none;margin-top:18px;border:1px solid var(--line);border-radius:10px;
+    overflow:hidden;background:#fcfdfe;}
+  .result .band{background:var(--brand);color:#fff;padding:8px 16px;font-size:.78rem;
+    font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
+  .result .body{padding:18px 16px;}
+  .bigcode{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;
+    font-size:2.6rem;letter-spacing:.18em;color:var(--brand-dk);line-height:1.1;word-break:break-word;}
+  @media(max-width:560px){.bigcode{font-size:2rem;}}
+  .steps{margin:14px 0 0;font-size:.92rem;color:var(--ink);}
+  .meta{margin-top:10px;font-size:.8rem;color:var(--muted);}
+  .actions{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;}
+  .btn-out{padding:10px 15px;font-size:.92rem;font-weight:600;background:#fff;
+    border:1px solid var(--brand);color:var(--brand);border-radius:8px;cursor:pointer;}
+  .btn-out:hover{background:var(--accent);}
+  .btn-dl{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .btn-dl:hover{background:var(--brand-dk);}
+
+  /* no-mail-app fallback */
+  .fallback{display:none;margin-top:14px;border:1px solid #ecd9a8;background:#fbf1dd;
+    border-radius:8px;padding:12px 14px;}
+  .fallback p{font-size:.88rem;color:#5a3d00;margin:0 0 8px;}
+  .fallback textarea{width:100%;min-height:190px;font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:.82rem;color:var(--ink);border:1px solid var(--line);border-radius:6px;
+    padding:8px 10px;background:#fff;resize:vertical;}
+  .fallback .fb-actions{margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .copied{color:var(--ok);font-size:.85rem;font-weight:600;display:none;}
+
+  ol.howto{margin:0;padding-left:20px;font-size:.92rem;}
+  ol.howto li{margin:6px 0;}
+  .warnbox{background:#fbf1dd;border:1px solid #ecd9a8;border-radius:8px;padding:12px 14px;
+    font-size:.88rem;color:#5a3d00;}
+  .warnbox strong{color:#5a3d00;}
+  footer{margin-top:6px;text-align:center;color:var(--muted);font-size:.78rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Riverbank Door Code Generator</h1>
+  <p class="sub">Create a random door code for your front door. This page does not save any data. Generate a code, then use the email button to send it to the property manager.</p>
+
+  <!-- ===================== HOW THE LOCK WORKS ===================== -->
+  <div class="card">
+    <h2>How the lock works</h2>
+    <div class="lockrow">
+      <div class="diagram" aria-hidden="true">
+        <!-- Electronic keypad lock: digits 0-9 plus C (clear), knob below the keypad -->
+        <svg width="200" height="330" viewBox="0 0 250 410" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Electronic keypad lock with digit buttons 0 through 9, a C button to clear, and a knob below the keypad">
+          <defs>
+            <linearGradient id="plate" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#aab2ba"/><stop offset="0.16" stop-color="#eef1f4"/>
+              <stop offset="0.5" stop-color="#cbd2d9"/><stop offset="0.84" stop-color="#eef1f4"/>
+              <stop offset="1" stop-color="#9aa3ac"/>
+            </linearGradient>
+            <radialGradient id="knob" cx="0.36" cy="0.3" r="0.9">
+              <stop offset="0" stop-color="#f2f4f6"/><stop offset="0.55" stop-color="#c4ccd3"/>
+              <stop offset="1" stop-color="#8d969f"/>
+            </radialGradient>
+            <radialGradient id="btn" cx="0.36" cy="0.3" r="0.85">
+              <stop offset="0" stop-color="#566069"/><stop offset="0.45" stop-color="#23282e"/>
+              <stop offset="1" stop-color="#0b0e11"/>
+            </radialGradient>
+          </defs>
+
+          <!-- faceplate -->
+          <rect x="55" y="10" width="140" height="290" rx="20" fill="url(#plate)" stroke="#828c96" stroke-width="1.5"/>
+          <rect x="70" y="40" width="110" height="205" rx="12" fill="#191d22" stroke="#0a0d10" stroke-width="1.5"/>
+
+          <!-- keypad: 1 2 3 / 4 5 6 / 7 8 9 / C 0 -->
+          <g font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="bold" text-anchor="middle">
+            <!-- row 1 -->
+            <circle cx="93" cy="68" r="14" fill="url(#btn)"/><text x="93" y="73" fill="#e8edf2">1</text>
+            <circle cx="125" cy="68" r="14" fill="url(#btn)"/><text x="125" y="73" fill="#e8edf2">2</text>
+            <circle cx="157" cy="68" r="14" fill="url(#btn)"/><text x="157" y="73" fill="#e8edf2">3</text>
+            <!-- row 2 -->
+            <circle cx="93" cy="116" r="14" fill="url(#btn)"/><text x="93" y="121" fill="#e8edf2">4</text>
+            <circle cx="125" cy="116" r="14" fill="url(#btn)"/><text x="125" y="121" fill="#e8edf2">5</text>
+            <circle cx="157" cy="116" r="14" fill="url(#btn)"/><text x="157" y="121" fill="#e8edf2">6</text>
+            <!-- row 3 -->
+            <circle cx="93" cy="164" r="14" fill="url(#btn)"/><text x="93" y="169" fill="#e8edf2">7</text>
+            <circle cx="125" cy="164" r="14" fill="url(#btn)"/><text x="125" y="169" fill="#e8edf2">8</text>
+            <circle cx="157" cy="164" r="14" fill="url(#btn)"/><text x="157" y="169" fill="#e8edf2">9</text>
+            <!-- row 4 -->
+            <circle cx="93" cy="212" r="14" fill="url(#btn)" stroke="#c9a24a" stroke-width="1.5"/><text x="93" y="217" fill="#f3d489">C</text>
+            <circle cx="125" cy="212" r="14" fill="url(#btn)"/><text x="125" y="217" fill="#e8edf2">0</text>
+          </g>
+          <text x="93" y="238" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="8.5" fill="#9aa3ac">clear</text>
+
+          <!-- knob below keypad -->
+          <circle cx="125" cy="340" r="34" fill="url(#knob)" stroke="#828c96" stroke-width="1.5"/>
+          <rect x="119" y="314" width="12" height="52" rx="6" fill="#8d969f" stroke="#78828c" stroke-width="1"/>
+          <text x="125" y="398" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="8.5" fill="#5b6b7b">knob - turn to open</text>
+
+          <!-- direction arrows -->
+          <g stroke="#1d4e6f" stroke-width="2" fill="none">
+            <path d="M78 340 A 47 47 0 0 1 96 305"/>
+            <path d="M172 340 A 47 47 0 0 0 154 305"/>
+          </g>
+          <g fill="#1d4e6f">
+            <path d="M96 305 l -8 1 5 7 z"/>
+            <path d="M154 305 l 8 1 -5 7 z"/>
+          </g>
+        </svg>
+      </div>
+      <div class="lockwords">
+        <p>Your door has an <strong>electronic keypad</strong> with the digits <strong>0-9</strong> and a <strong>C</strong> button. Your code is <strong>4 digits</strong>, entered one at a time. After entering it, you turn the knob to open the door.</p>
+        <p style="margin-bottom:6px;"><strong>Three simple rules:</strong></p>
+        <ol class="howto" style="margin-bottom:12px;">
+          <li>Each digit is used <strong>only once</strong> in a code - no digit repeats.</li>
+          <li>Press <strong>one button at a time</strong>, in order.</li>
+          <li>Made a mistake? Press <strong>C</strong> to clear and start over.</li>
+        </ol>
+        <h3>Which way to turn the knob</h3>
+        <div class="legend">
+          <span class="chip"><strong>Unlock:</strong>&nbsp;turn the knob <strong>away from</strong> the door jamb</span>
+          <span class="chip"><strong>Lock:</strong>&nbsp;turn the knob <strong>toward</strong> the door jamb</span>
+        </div>
+        <p class="hint" style="margin-top:8px;">The door jamb is the frame edge the door closes against - the side with the latch.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== GENERATE ===================== -->
+  <div class="card">
+    <h2>Generate a code</h2>
+    <p class="hint" style="margin-bottom:8px;">Optional - fill these in to personalize the email before generating.</p>
+    <div class="grid2">
+      <div><label for="resident">Resident name <span class="hint">(optional)</span></label><input type="text" id="resident" autocomplete="off" /></div>
+      <div><label for="unit">Property / unit <span class="hint">(optional)</span></label><input type="text" id="unit" autocomplete="off" /></div>
+    </div>
+
+    <div class="gbtns" style="margin-top:18px;">
+      <button type="button" class="gbtn" id="genBtn">
+        <span class="t">Generate code</span>
+        <span class="d">A random 4-digit code. No digit is used twice.</span>
+      </button>
+    </div>
+
+    <div class="result" id="result" aria-live="polite">
+      <div class="band">Your new code</div>
+      <div class="body">
+        <div class="bigcode" id="bigCode"></div>
+        <div class="steps" id="stepsBox"></div>
+        <div class="meta" id="metaBox"></div>
+        <div class="actions">
+          <button type="button" class="btn-out" id="regenBtn">Generate another</button>
+          <button type="button" class="btn-out btn-dl" id="emailBtn">Email to Property Manager</button>
+        </div>
+        <div class="meta" id="mailHint" style="display:none;">Your email app should have opened with the code filled in and addressed to the property manager - just hit send.</div>
+        <div class="fallback" id="mailFallback">
+          <p><strong>It doesn't look like an email app opened on this device.</strong> No problem - copy the message below and paste it into an email (Gmail, Outlook, etc.) to <strong>rb@alliancewi.com</strong>.</p>
+          <textarea id="mailText" readonly aria-label="Email message to copy"></textarea>
+          <div class="fb-actions">
+            <button type="button" class="btn-out" id="copyBtn">Copy message</button>
+            <span class="copied" id="copiedNote">Copied - paste it into a new email.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== HOW TO ENTER ===================== -->
+  <div class="card">
+    <h2>How to enter your code on the door</h2>
+    <ol class="howto">
+      <li>Press the four digits in order, one at a time. Press each button firmly.</li>
+      <li>Made a mistake, or not sure where you left off? Press <strong>C</strong> to clear everything and start over from the first digit.</li>
+      <li>After the fourth digit, <strong>turn the knob away from the door jamb</strong> to unlock, and open the door.</li>
+      <li>If the door doesn't unlock, press <strong>C</strong>, re-enter the code, and try again.</li>
+      <li><strong>This lock does not relock by itself.</strong> To lock up, close the door and <strong>turn the knob toward the door jamb</strong>.</li>
+    </ol>
+  </div>
+
+  <!-- ===================== KEEP IT SAFE ===================== -->
+  <div class="card">
+    <h2>Keep your code safe</h2>
+    <div class="warnbox">
+      <strong>This code unlocks your apartment.</strong> Keep it private. Do not post it where others can see it, and do not share it with anyone who should not have access to your home. A fee applies to change your code after move-in - contact the office. If you think your code has been seen by someone else, contact the office so it can be changed.
+    </div>
+  </div>
+
+  <footer id="stamp"></footer>
+</div>
+
+<script>
+"use strict";
+/* ========================= CONFIG ========================= */
+var BUILD="v1", BUILD_DATE="2026-07-07";
+var MANAGER_EMAIL="rb@alliancewi.com";
+var DIGITS=[0,1,2,3,4,5,6,7,8,9];
+var CODE_LEN=4;
+/* ========================================================== */
+
+/* ---------- state ---------- */
+var codeHistory=[];          // ordered list of generated code strings
+var seen=Object.create(null);// uniqueness set
+var last=null;               // last generated {code, digits}
+
+/* ---------- helpers ---------- */
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+// reject straight consecutive runs like 1234 or 8765 - too guessable
+function isStraightRun(d){
+  var up=true,down=true;
+  for(var i=1;i<d.length;i++){
+    if(d[i]!==d[i-1]+1)up=false;
+    if(d[i]!==d[i-1]-1)down=false;
+  }
+  return up||down;
+}
+
+// digits -> plain-English steps
+function digitsToSteps(d){
+  var parts=d.map(function(n){return "press "+n;});
+  var txt=parts.join(", then ");
+  return txt.charAt(0).toUpperCase()+txt.slice(1)+", then turn the knob away from the door jamb.";
+}
+
+// generate one 4-digit code: 4 distinct digits, no straight runs, no repeats across generations
+function generate(){
+  var d,str,tries=0;
+  do{
+    d=shuffle(DIGITS.slice()).slice(0,CODE_LEN);
+    str=d.join("");
+    tries++;
+  }while((seen[str]||isStraightRun(d))&&tries<500);
+  seen[str]=true;codeHistory.push(str);
+  last={code:str,digits:d};
+  return last;
+}
+
+/* ---------- render ---------- */
+function render(g){
+  document.getElementById("result").style.display="block";
+  document.getElementById("mailHint").style.display="none";
+  document.getElementById("mailFallback").style.display="none";
+  document.getElementById("copiedNote").style.display="none";
+  document.getElementById("bigCode").textContent=g.digits.join(" ");
+  document.getElementById("stepsBox").innerHTML="<strong>On the keypad:</strong> "+digitsToSteps(g.digits);
+  document.getElementById("metaBox").textContent="4 digits - each digit is used only once. Press C to clear if you make a mistake.";
+  document.getElementById("result").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+document.getElementById("genBtn").addEventListener("click",function(){render(generate());});
+document.getElementById("regenBtn").addEventListener("click",function(){render(generate());});
+
+/* ---------- date / stamp ---------- */
+function todayStr(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+document.getElementById("stamp").textContent="Riverbank Door Code Generator - build "+BUILD+", "+BUILD_DATE+".";
+
+/* ============ Email to Property Manager (mailto:, no attachment) ============ */
+/* mailto: cannot carry attachments, so the code and instructions are placed in
+   the email body as plain text. To: is pre-addressed to rb@alliancewi.com.
+
+   No-mail-app detection: there is NO browser API that reveals whether a mailto:
+   handler exists. Heuristic: when a mail app (or webmail tab) opens, this page
+   loses focus. If the page STILL has focus ~1.5s after the click, assume nothing
+   handled the mailto and show a copy-paste fallback instead. Best-effort only. */
+
+function buildEmail(){
+  var resident=document.getElementById("resident").value.trim();
+  var unit=document.getElementById("unit").value.trim();
+  var subject="New door code"+(unit?" - "+unit:"")+(resident?" - "+resident:"");
+  var lines=[
+    "Hello,",
+    "",
+    "Here is the new door code I would like set for my apartment"+(unit?" ("+unit+")":"")+":",
+    "",
+    "CODE: "+last.code,
+    "",
+    "On the keypad: "+digitsToSteps(last.digits),
+    "",
+    "Tip: press C to clear the keypad and start over after a mistake. Each digit is used only once.",
+    "",
+    "Resident: "+(resident||"________________"),
+    "Property / unit: "+(unit||"________________"),
+    "Date: "+todayStr(),
+    "",
+    "Thank you,",
+    resident||""
+  ];
+  return {subject:subject, body:lines.join("\r\n")};
+}
+
+document.getElementById("emailBtn").addEventListener("click",function(){
+  if(!last){alert("Generate a code first.");return;}
+  var em=buildEmail();
+  document.getElementById("mailHint").style.display="none";
+  document.getElementById("mailFallback").style.display="none";
+
+  window.location.href="mailto:"+MANAGER_EMAIL+"?subject="+encodeURIComponent(em.subject)+"&body="+encodeURIComponent(em.body);
+
+  // Focus heuristic: if we still have focus after 1.5s, no mail app took over.
+  setTimeout(function(){
+    if(document.hasFocus()){
+      var fb=document.getElementById("mailFallback");
+      document.getElementById("mailText").value="To: "+MANAGER_EMAIL+"\r\nSubject: "+em.subject+"\r\n\r\n"+em.body;
+      fb.style.display="block";
+      fb.scrollIntoView({behavior:"smooth",block:"nearest"});
+    }else{
+      document.getElementById("mailHint").style.display="block";
+    }
+  },1500);
+});
+
+/* copy button: modern clipboard API with select+execCommand fallback */
+document.getElementById("copyBtn").addEventListener("click",function(){
+  var ta=document.getElementById("mailText");
+  function done(){var n=document.getElementById("copiedNote");n.style.display="inline";
+    setTimeout(function(){n.style.display="none";},4000);}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(ta.value).then(done,function(){legacy();});
+  }else{legacy();}
+  function legacy(){ta.focus();ta.select();try{document.execCommand("copy");done();}catch(e){/* selection stays; user can Cmd/Ctrl+C */}}
+});
+</script>
+</body>
+</html>
