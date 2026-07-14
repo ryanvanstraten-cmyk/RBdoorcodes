@@ -5,28 +5,49 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Riverbank Door Code Generator</title>
 <!--
-  Riverbank Door Code Generator. Build v1 - 2026-07-07
-  For the Riverbank electronic keypad lock.
-  Generates a random 4-digit door code for a resident, with how-to instructions.
+  Riverbank Door Code Generator. Build v5 - 2026-07-13
+  For the Riverbank push-button keypad lock (Codelocks-style: two vertical
+  columns of buttons 1-5 and 6-0, a C button, round knob with key cylinder).
+  Generates a random door code for a resident, with how-to instructions.
   Nothing is stored. The email button sends the code to rb@alliancewi.com.
+
+  Change summary v5 (2026-07-13):
+   - Intro paragraph now says the same 4-digit number is also the garage door
+     code.
+
+  Change summary v4 (2026-07-13):
+   - Garage note tightened: no C on the garage keypad (confirmed by Ryan),
+     just the 4 digits. Result card + email body updated.
+
+  Change summary v3 (2026-07-13):
+   - Added a note (result card + email body) that the garage code uses the
+     same 4-digit number as the door code.
+
+  Change summary v2 (2026-07-13):
+   - Redrew the lock graphic from a photo of the actual RB lock: satin-chrome
+     body, two vertical columns of buttons (1-5 left, 6-0 right), C button at
+     the bottom of the keypad, round knob with key cylinder below.
+   - Codes now ALWAYS start with C: the code is C + 4 digits. C clears anything
+     pressed before, so every entry begins with it. Display, keypad steps, and
+     email text updated accordingly.
+   - Wording changed from "electronic keypad" to "push-button keypad."
 
   Change summary v1 (2026-07-07):
    - New tool, based on the Simplex Door Code Generator v5 chassis (same layout,
      email-to-manager flow with no-mail-app copy fallback).
-   - Rules rewritten for the electronic lock (see LOCK RULES below).
-   - Single "Generate code" button (no double-press style on this lock).
-   - mailto: To: is pre-addressed to rb@alliancewi.com.
+   - Single "Generate code" button; mailto: pre-addressed to rb@alliancewi.com.
 
-  Deployment: rename a copy to index.html for the GitHub Pages repo serving
-  rbdoorcodes.alliancewi.com (CNAME already created on GoDaddy).
+  Deployment: rename a copy to index.html for the GitHub Pages repo (RBdoorcodes)
+  serving rbdoorcodes.alliancewi.com.
 
   ============================================================================
   LOCK RULES (drive the generator - edit here if hardware rules change):
-   - Electronic keypad, digits 0-9 plus a C (clear) button.
-   - Code is exactly 4 digits.
+   - Push-button keypad: digits 0-9 in two vertical columns (1-5 left, 6-0
+     right) plus a C button at the bottom of the keypad.
+   - Every code starts with C, followed by exactly 4 digits: C + # # # #.
+     C clears anything previously pressed, so entries always begin with it.
    - No digit may be used more than once in a code.
    - No simultaneous presses - one button at a time.
-   - Press C at any time to clear and start over.
    - Knob turned AWAY from the door jamb = unlock; TOWARD the jamb = lock.
    - Generator also rejects straight runs (e.g. 1234, 8765) as too guessable;
      no repeats across generations while feasible.
@@ -77,7 +98,7 @@
     font-weight:700;letter-spacing:.04em;text-transform:uppercase;}
   .result .body{padding:18px 16px;}
   .bigcode{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;
-    font-size:2.6rem;letter-spacing:.18em;color:var(--brand-dk);line-height:1.1;word-break:break-word;}
+    font-size:2.6rem;letter-spacing:.12em;color:var(--brand-dk);line-height:1.1;word-break:break-word;}
   @media(max-width:560px){.bigcode{font-size:2rem;}}
   .steps{margin:14px 0 0;font-size:.92rem;color:var(--ink);}
   .meta{margin-top:10px;font-size:.8rem;color:var(--muted);}
@@ -109,15 +130,18 @@
 <body>
 <div class="wrap">
   <h1>Riverbank Door Code Generator</h1>
-  <p class="sub">Create a random door code for your front door. This page does not save any data. Generate a code, then use the email button to send it to the property manager.</p>
+  <p class="sub">Create a random door code for your front door. The same 4-digit number will also be your garage door code. This page does not save any data. Generate a code, then use the email button to send it to the property manager.</p>
 
   <!-- ===================== HOW THE LOCK WORKS ===================== -->
   <div class="card">
     <h2>How the lock works</h2>
     <div class="lockrow">
       <div class="diagram" aria-hidden="true">
-        <!-- Electronic keypad lock: digits 0-9 plus C (clear), knob below the keypad -->
-        <svg width="200" height="330" viewBox="0 0 250 410" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Electronic keypad lock with digit buttons 0 through 9, a C button to clear, and a knob below the keypad">
+        <!-- Push-button keypad lock, drawn from a photo of the RB lock:
+             satin-chrome body, two vertical columns of black buttons
+             (1-5 left, 6-0 right), C button at the bottom of the keypad,
+             round knob with key cylinder below -->
+        <svg width="200" height="345" viewBox="0 0 250 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Push-button keypad lock with two columns of digit buttons, a C button below them, and a round knob with a key cylinder at the base">
           <defs>
             <linearGradient id="plate" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0" stop-color="#aab2ba"/><stop offset="0.16" stop-color="#eef1f4"/>
@@ -125,8 +149,8 @@
               <stop offset="1" stop-color="#9aa3ac"/>
             </linearGradient>
             <radialGradient id="knob" cx="0.36" cy="0.3" r="0.9">
-              <stop offset="0" stop-color="#f2f4f6"/><stop offset="0.55" stop-color="#c4ccd3"/>
-              <stop offset="1" stop-color="#8d969f"/>
+              <stop offset="0" stop-color="#f6f8fa"/><stop offset="0.55" stop-color="#c4ccd3"/>
+              <stop offset="1" stop-color="#89929b"/>
             </radialGradient>
             <radialGradient id="btn" cx="0.36" cy="0.3" r="0.85">
               <stop offset="0" stop-color="#566069"/><stop offset="0.45" stop-color="#23282e"/>
@@ -134,53 +158,66 @@
             </radialGradient>
           </defs>
 
-          <!-- faceplate -->
-          <rect x="55" y="10" width="140" height="290" rx="20" fill="url(#plate)" stroke="#828c96" stroke-width="1.5"/>
-          <rect x="70" y="40" width="110" height="205" rx="12" fill="#191d22" stroke="#0a0d10" stroke-width="1.5"/>
-
-          <!-- keypad: 1 2 3 / 4 5 6 / 7 8 9 / C 0 -->
-          <g font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="bold" text-anchor="middle">
-            <!-- row 1 -->
-            <circle cx="93" cy="68" r="14" fill="url(#btn)"/><text x="93" y="73" fill="#e8edf2">1</text>
-            <circle cx="125" cy="68" r="14" fill="url(#btn)"/><text x="125" y="73" fill="#e8edf2">2</text>
-            <circle cx="157" cy="68" r="14" fill="url(#btn)"/><text x="157" y="73" fill="#e8edf2">3</text>
-            <!-- row 2 -->
-            <circle cx="93" cy="116" r="14" fill="url(#btn)"/><text x="93" y="121" fill="#e8edf2">4</text>
-            <circle cx="125" cy="116" r="14" fill="url(#btn)"/><text x="125" y="121" fill="#e8edf2">5</text>
-            <circle cx="157" cy="116" r="14" fill="url(#btn)"/><text x="157" y="121" fill="#e8edf2">6</text>
-            <!-- row 3 -->
-            <circle cx="93" cy="164" r="14" fill="url(#btn)"/><text x="93" y="169" fill="#e8edf2">7</text>
-            <circle cx="125" cy="164" r="14" fill="url(#btn)"/><text x="125" y="169" fill="#e8edf2">8</text>
-            <circle cx="157" cy="164" r="14" fill="url(#btn)"/><text x="157" y="169" fill="#e8edf2">9</text>
-            <!-- row 4 -->
-            <circle cx="93" cy="212" r="14" fill="url(#btn)" stroke="#c9a24a" stroke-width="1.5"/><text x="93" y="217" fill="#f3d489">C</text>
-            <circle cx="125" cy="212" r="14" fill="url(#btn)"/><text x="125" y="217" fill="#e8edf2">0</text>
+          <!-- satin-chrome body: rounded vertical plate -->
+          <path d="M125 8 C168 8 187 30 187 66 L187 250 C187 286 168 306 125 306 C82 306 63 286 63 250 L63 66 C63 30 82 8 125 8 Z"
+                fill="url(#plate)" stroke="#828c96" stroke-width="1.5"/>
+          <!-- subtle brushed striping -->
+          <g stroke="#ffffff" stroke-opacity="0.22" stroke-width="1">
+            <line x1="92" y1="26" x2="92" y2="290"/><line x1="108" y1="18" x2="108" y2="298"/>
+            <line x1="142" y1="18" x2="142" y2="298"/><line x1="158" y1="26" x2="158" y2="290"/>
           </g>
-          <text x="93" y="238" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="8.5" fill="#9aa3ac">clear</text>
 
-          <!-- knob below keypad -->
-          <circle cx="125" cy="340" r="34" fill="url(#knob)" stroke="#828c96" stroke-width="1.5"/>
-          <rect x="119" y="314" width="12" height="52" rx="6" fill="#8d969f" stroke="#78828c" stroke-width="1"/>
-          <text x="125" y="398" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="8.5" fill="#5b6b7b">knob - turn to open</text>
+          <!-- keypad: two vertical columns, digits engraved beside each button -->
+          <g font-family="Helvetica,Arial,sans-serif" font-size="13" font-weight="bold">
+            <!-- left column: 1-5, labels to the left -->
+            <g text-anchor="end">
+              <circle cx="103" cy="52"  r="12" fill="url(#btn)"/><text x="86" y="57"  fill="#5b6b7b">1</text>
+              <circle cx="103" cy="88"  r="12" fill="url(#btn)"/><text x="86" y="93"  fill="#5b6b7b">2</text>
+              <circle cx="103" cy="124" r="12" fill="url(#btn)"/><text x="86" y="129" fill="#5b6b7b">3</text>
+              <circle cx="103" cy="160" r="12" fill="url(#btn)"/><text x="86" y="165" fill="#5b6b7b">4</text>
+              <circle cx="103" cy="196" r="12" fill="url(#btn)"/><text x="86" y="201" fill="#5b6b7b">5</text>
+            </g>
+            <!-- right column: 6-0, labels to the right -->
+            <g text-anchor="start">
+              <circle cx="147" cy="52"  r="12" fill="url(#btn)"/><text x="164" y="57"  fill="#5b6b7b">6</text>
+              <circle cx="147" cy="88"  r="12" fill="url(#btn)"/><text x="164" y="93"  fill="#5b6b7b">7</text>
+              <circle cx="147" cy="124" r="12" fill="url(#btn)"/><text x="164" y="129" fill="#5b6b7b">8</text>
+              <circle cx="147" cy="160" r="12" fill="url(#btn)"/><text x="164" y="165" fill="#5b6b7b">9</text>
+              <circle cx="147" cy="196" r="12" fill="url(#btn)"/><text x="164" y="201" fill="#5b6b7b">0</text>
+            </g>
+            <!-- C button: bottom of the keypad, centered -->
+            <circle cx="125" cy="236" r="12" fill="url(#btn)" stroke="#c9a24a" stroke-width="1.5"/>
+            <text x="125" y="241" text-anchor="middle" fill="#f3d489">C</text>
+            <text x="145" y="241" text-anchor="start" font-size="8.5" font-weight="normal" fill="#5b6b7b">start / clear</text>
+          </g>
+
+          <!-- brand line, like the engraving on the real lock -->
+          <text x="125" y="282" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="8" letter-spacing="1.5" fill="#79838d">RIVERBANK</text>
+
+          <!-- round knob with key cylinder, below the body -->
+          <circle cx="125" cy="366" r="38" fill="url(#knob)" stroke="#828c96" stroke-width="1.5"/>
+          <circle cx="125" cy="366" r="16" fill="#b7bfc7" stroke="#828c96" stroke-width="1"/>
+          <path d="M125 356 a5 5 0 0 1 3 9 l 0 8 -6 0 0 -8 a5 5 0 0 1 3 -9 Z" fill="#3a424a"/>
+          <text x="125" y="422" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="8.5" fill="#5b6b7b">knob - turn to open</text>
 
           <!-- direction arrows -->
           <g stroke="#1d4e6f" stroke-width="2" fill="none">
-            <path d="M78 340 A 47 47 0 0 1 96 305"/>
-            <path d="M172 340 A 47 47 0 0 0 154 305"/>
+            <path d="M73 366 A 52 52 0 0 1 93 327"/>
+            <path d="M177 366 A 52 52 0 0 0 157 327"/>
           </g>
           <g fill="#1d4e6f">
-            <path d="M96 305 l -8 1 5 7 z"/>
-            <path d="M154 305 l 8 1 -5 7 z"/>
+            <path d="M93 327 l -8 1 5 7 z"/>
+            <path d="M157 327 l 8 1 -5 7 z"/>
           </g>
         </svg>
       </div>
       <div class="lockwords">
-        <p>Your door has an <strong>electronic keypad</strong> with the digits <strong>0-9</strong> and a <strong>C</strong> button. Your code is <strong>4 digits</strong>, entered one at a time. After entering it, you turn the knob to open the door.</p>
+        <p>Your door has a <strong>push-button keypad</strong> with two columns of numbered buttons (<strong>1-5</strong> on the left, <strong>6-0</strong> on the right) and a <strong>C</strong> button at the bottom. After entering your code, you turn the knob to open the door.</p>
         <p style="margin-bottom:6px;"><strong>Three simple rules:</strong></p>
         <ol class="howto" style="margin-bottom:12px;">
-          <li>Each digit is used <strong>only once</strong> in a code - no digit repeats.</li>
+          <li>Every code <strong>starts with C</strong> - it clears anything pressed before, so your code always begins fresh. Then come your <strong>4 digits</strong>.</li>
           <li>Press <strong>one button at a time</strong>, in order.</li>
-          <li>Made a mistake? Press <strong>C</strong> to clear and start over.</li>
+          <li>Each digit is used <strong>only once</strong> in a code - no digit repeats.</li>
         </ol>
         <h3>Which way to turn the knob</h3>
         <div class="legend">
@@ -204,7 +241,7 @@
     <div class="gbtns" style="margin-top:18px;">
       <button type="button" class="gbtn" id="genBtn">
         <span class="t">Generate code</span>
-        <span class="d">A random 4-digit code. No digit is used twice.</span>
+        <span class="d">A random code: C plus 4 digits. No digit is used twice.</span>
       </button>
     </div>
 
@@ -235,10 +272,11 @@
   <div class="card">
     <h2>How to enter your code on the door</h2>
     <ol class="howto">
-      <li>Press the four digits in order, one at a time. Press each button firmly.</li>
-      <li>Made a mistake, or not sure where you left off? Press <strong>C</strong> to clear everything and start over from the first digit.</li>
+      <li>Press <strong>C</strong> first - every entry starts with it. It clears anything pressed before.</li>
+      <li>Then press your four digits in order, one at a time. Press each button firmly.</li>
+      <li>Made a mistake, or not sure where you left off? Press <strong>C</strong> and start over from the beginning.</li>
       <li>After the fourth digit, <strong>turn the knob away from the door jamb</strong> to unlock, and open the door.</li>
-      <li>If the door doesn't unlock, press <strong>C</strong>, re-enter the code, and try again.</li>
+      <li>If the door doesn't unlock, press <strong>C</strong>, re-enter the full code, and try again.</li>
       <li><strong>This lock does not relock by itself.</strong> To lock up, close the door and <strong>turn the knob toward the door jamb</strong>.</li>
     </ol>
   </div>
@@ -257,16 +295,16 @@
 <script>
 "use strict";
 /* ========================= CONFIG ========================= */
-var BUILD="v1", BUILD_DATE="2026-07-07";
+var BUILD="v5", BUILD_DATE="2026-07-13";
 var MANAGER_EMAIL="rb@alliancewi.com";
 var DIGITS=[0,1,2,3,4,5,6,7,8,9];
-var CODE_LEN=4;
+var CODE_LEN=4;   // digits after the leading C
 /* ========================================================== */
 
 /* ---------- state ---------- */
-var codeHistory=[];          // ordered list of generated code strings
+var codeHistory=[];          // ordered list of generated code strings (digits only)
 var seen=Object.create(null);// uniqueness set
-var last=null;               // last generated {code, digits}
+var last=null;               // last generated {code, digits} - code includes leading "C"
 
 /* ---------- helpers ---------- */
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
@@ -281,14 +319,13 @@ function isStraightRun(d){
   return up||down;
 }
 
-// digits -> plain-English steps
+// digits -> plain-English steps (code always starts with C)
 function digitsToSteps(d){
   var parts=d.map(function(n){return "press "+n;});
-  var txt=parts.join(", then ");
-  return txt.charAt(0).toUpperCase()+txt.slice(1)+", then turn the knob away from the door jamb.";
+  return "Press C to start, then "+parts.join(", then ")+", then turn the knob away from the door jamb.";
 }
 
-// generate one 4-digit code: 4 distinct digits, no straight runs, no repeats across generations
+// generate one code: C + 4 distinct digits, no straight runs, no repeats across generations
 function generate(){
   var d,str,tries=0;
   do{
@@ -297,7 +334,7 @@ function generate(){
     tries++;
   }while((seen[str]||isStraightRun(d))&&tries<500);
   seen[str]=true;codeHistory.push(str);
-  last={code:str,digits:d};
+  last={code:"C"+str,digits:d};
   return last;
 }
 
@@ -307,9 +344,10 @@ function render(g){
   document.getElementById("mailHint").style.display="none";
   document.getElementById("mailFallback").style.display="none";
   document.getElementById("copiedNote").style.display="none";
-  document.getElementById("bigCode").textContent=g.digits.join(" ");
-  document.getElementById("stepsBox").innerHTML="<strong>On the keypad:</strong> "+digitsToSteps(g.digits);
-  document.getElementById("metaBox").textContent="4 digits - each digit is used only once. Press C to clear if you make a mistake.";
+  document.getElementById("bigCode").textContent="C "+g.digits.join(" ");
+  document.getElementById("stepsBox").innerHTML="<strong>On the keypad:</strong> "+digitsToSteps(g.digits)
+    +"<br><strong>Garage:</strong> your garage code is the same 4-digit number as your door code - no C needed on the garage keypad, just the 4 digits.";
+  document.getElementById("metaBox").textContent="C + 4 digits - each digit is used only once. C clears the keypad and starts your code.";
   document.getElementById("result").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
@@ -342,7 +380,9 @@ function buildEmail(){
     "",
     "On the keypad: "+digitsToSteps(last.digits),
     "",
-    "Tip: press C to clear the keypad and start over after a mistake. Each digit is used only once.",
+    "Tip: every entry starts with C - it clears anything pressed before. Each digit is used only once.",
+    "",
+    "Note: the garage code uses the same 4-digit number as the door code - no C needed on the garage keypad, just the 4 digits.",
     "",
     "Resident: "+(resident||"________________"),
     "Property / unit: "+(unit||"________________"),
